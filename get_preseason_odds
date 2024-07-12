@@ -1,0 +1,123 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+
+def scrape_team_statistics(year):
+    url = f"https://www.basketball-reference.com/leagues/NBA_{year}_preseason_odds.html"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"Failed to fetch page for team {year}. Status code: {response.status_code}")
+        return None
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # Initialize an empty list to hold the stats
+    all_stats = []
+
+    # Define the selectors for each stat
+    stat_selectors = {
+        'team': 'th[data-stat="team"] a',
+        'Odds': 'td[data-stat="odds_fmt"]',
+        'wins_ou': 'td[data-stat="wins_ou"]'
+    }
+
+    # Find all rows in the table with the team ID
+    rows = soup.select('tbody tr')
+    for row in rows:
+        previous_year = year - 1
+        season = f"{previous_year}-{str(year)[-2:]}"
+        stats = {'season': season}
+        for key, selector in stat_selectors.items():
+            try:
+                element = row.select_one(selector)
+                if element and element.a:  # If there's an anchor tag within the element
+                    stats[key] = element.a.text
+                else:
+                    stats[key] = element.get_text().strip()
+            except AttributeError:
+                stats[key] = 'N/A'
+        all_stats.append(stats)
+        print(f"Team: {stats.get('team', 'N/A')}, Odds: {stats.get('Odds', 'N/A')}")
+
+    return all_stats
+
+# List of NBA team abbreviations
+years = range(1985, 2025)
+
+# Collect statistics for all teams
+all_team_stats = []
+for year in years:
+    team_stats = scrape_team_statistics(year)
+    if team_stats:
+        all_team_stats.extend(team_stats)
+    # Sleep for 2 seconds between requests
+    time.sleep(2)
+
+# Convert the collected data into a DataFrame
+df = pd.DataFrame(all_team_stats)
+
+
+
+nba_teams = {
+    'Atlanta Hawks': 'ATL',
+    'Boston Celtics': 'BOS',
+    'Charlotte Hornets': 'CHA',
+    'Chicago Bulls': 'CHI',
+    'Cleveland Cavaliers': 'CLE',
+    'Dallas Mavericks': 'DAL',
+    'Denver Nuggets': 'DEN',
+    'Detroit Pistons': 'DET',
+    'Golden State Warriors': 'GSW',
+    'Houston Rockets': 'HOU',
+    'Indiana Pacers': 'IND',
+    'Los Angeles Clippers': 'LAC',
+    'Los Angeles Lakers': 'LAL',
+    'Memphis Grizzlies': 'MEM',
+    'Miami Heat': 'MIA',
+    'Milwaukee Bucks': 'MIL',
+    'Minnesota Timberwolves': 'MIN',
+    'New Jersey Nets': 'NJN',
+    'New Orleans Hornets': 'NOH',
+    'New York Knicks': 'NYK',
+    'Oklahoma City Thunder': 'OKC',
+    'Orlando Magic': 'ORL',
+    'Philadelphia 76ers': 'PHI',
+    'Phoenix Suns': 'PHO',
+    'Portland Trail Blazers': 'POR',
+    'Sacramento Kings': 'SAC',
+    'San Antonio Spurs': 'SAS',
+    'Toronto Raptors': 'TOR',
+    'Utah Jazz': 'UTA',
+    'Washington Wizards': 'WAS',
+    'Seattle SuperSonics': 'OKC',  # Moved and became the Oklahoma City Thunder
+    'New Orleans Pelicans': 'NOH',  # Originally New Orleans Hornets before rebranding
+    'Washington Bullets': 'WAS',  # Rebranded to Washington Wizards
+    'Brooklyn Nets': 'NJN',  # Previously the New Jersey Nets
+    'Vancouver Grizzlies': 'MEM',  # Moved and became the Memphis Grizzlies
+    'Charlotte Bobcats': 'CHA'  # Rebranded back to Charlotte Hornets
+}
+
+df['team'] = df['team'].map(nba_teams)
+
+def odds_to_likelihood(odds):
+    if odds.startswith('+'):
+        odds_value = int(odds[1:])
+        return 100 / (odds_value + 100)
+    elif odds.startswith('-'):
+        odds_value = int(odds[1:])
+        return odds_value / (odds_value + 100)
+    else:
+        raise ValueError("Invalid odds format")
+
+# Apply the function to the 'Odds' column
+df['Likelihood'] = df['Odds'].apply(odds_to_likelihood)
+
+
+# Display the DataFrame
+print(df)
+
+
+
+# Save to CSV if needed
+df.to_csv('preseason_odds.csv', index=False)
