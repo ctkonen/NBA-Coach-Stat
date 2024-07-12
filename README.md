@@ -43,13 +43,13 @@ Below are some key visualizations generated during our analysis:
 
 ### Coach Performance (Last 10 Years)
 
-![Coach Performance Last 10 Years](coach_performance_last_10_years.png)
+![Coach Performance Last 10 Years](coach performance last 10 years.png)
 
 _Description: This graph shows the performance of various NBA coaches over the last 10 years, highlighting trends and changes in their effectiveness._
 
 ### Coach Performance Over Years
 
-![Coach Performance Over Years](coach_performance_over_years.png)
+![Coach Performance Over Years](coach performance over years.png)
 
 _Description: This graph illustrates the performance of NBA coaches over multiple years, allowing us to track their progress and impact on their respective teams._
 
